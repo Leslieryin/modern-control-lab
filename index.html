@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>现代控制理论 · 交互实验台</title>
+<style>
+:root{
+  --bg:#f5f7fa; --panel:#ffffff; --ink:#1c2733; --muted:#6b7a89;
+  --accent:#0f6cbd; --accent2:#d97706; --good:#15803d; --bad:#b91c1c;
+  --line:#dbe3ec; --chip:#eef4fb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  font-size:15px;line-height:1.55}
+header{background:var(--panel);border-bottom:1px solid var(--line);
+  padding:14px 20px 0;position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:19px;font-weight:600}
+h1 small{color:var(--muted);font-weight:400;font-size:13px;margin-left:10px}
+.tabs{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+.tabs button{border:none;background:none;padding:9px 14px;font-size:14px;cursor:pointer;
+  color:var(--muted);border-bottom:2.5px solid transparent;font-family:inherit}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+main{max-width:1060px;margin:0 auto;padding:18px 16px 40px}
+section{display:none}
+section.on{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;margin-bottom:14px}
+.panel h2{margin:0 0 4px;font-size:16px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 10px}
+.ctrls{display:flex;flex-wrap:wrap;gap:14px 22px;margin-bottom:6px}
+.ctrl{min-width:200px;flex:1}
+.ctrl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=text]{padding:6px 8px;border:1px solid var(--line);border-radius:6px;
+  font:inherit;width:100%;font-variant-numeric:tabular-nums}
+.mats{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0}
+.mats .ctrl{min-width:180px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:var(--chip);border-radius:8px;padding:6px 12px;font-size:13px}
+.chip b{font-variant-numeric:tabular-nums}
+canvas{width:100%;display:block;background:#fff;border:1px solid var(--line);border-radius:8px}
+.plotwrap{margin-top:10px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.btns button{border:1px solid var(--line);background:#fff;border-radius:7px;
+  padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px}
+.stable{color:var(--good);font-weight:600}
+.unstable{color:var(--bad);font-weight:600}
+mono,code{font-family:Consolas,Menlo,monospace}
+footer{max-width:1060px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:12.5px}
+@media (max-width:640px){ .ctrl{min-width:100%} }
+</style>
+</head>
+<body>
+<header>
+  <h1>现代控制理论 · 交互实验台<small>状态空间方法 · 全部计算在浏览器本地完成 · 零依赖单文件</small></h1>
+  <nav class="tabs" id="tabs">
+    <button data-t="ss" class="on">状态空间响应</button>
+    <button data-t="ctrb">能控性与能观性</button>
+    <button data-t="pole">极点配置</button>
+    <button data-t="obsv">状态观测器</button>
+    <button data-t="kf">卡尔曼滤波</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ 1 状态空间响应 ============ -->
+<section id="tab-ss" class="on">
+  <div class="panel">
+    <h2>线性定常系统的状态空间建模与响应</h2>
+    <p class="hint">编辑系统矩阵（行用 <code>;</code> 分隔、列用逗号分隔），观察 ẋ=Ax+Bu、y=Cx 在单位阶跃输入下的状态与输出演化。默认系统对应传递函数 9/(s²+1.2s+9)。</p>
+    <div class="mats">
+      <div class="ctrl"><label>系统矩阵 A</label><input type="text" id="ss-A" value="0, 1; -9, -1.2"></div>
+      <div class="ctrl"><label>输入矩阵 B</label><input type="text" id="ss-B" value="0; 9"></div>
+      <div class="ctrl"><label>输出矩阵 C</label><input type="text" id="ss-C" value="1, 0"></div>
+      <div class="ctrl" style="flex:0.4;min-width:110px"><label>&nbsp;</label>
+        <div class="btns" style="margin:0"><button id="ss-go">计 算</button></div></div>
+    </div>
+    <div class="chips" id="ss-chips"></div>
+    <div class="plotwrap"><canvas id="cv-ss" height="360"></canvas></div>
+    <p class="note">判读：状态 x₁（位置类）与 x₂（速度类）的物理含义由 C 决定；A 的特征值决定模态——负实部收敛、正实部发散、共轭对对应振荡。</p>
+  </div>
+</section>
+
+<!-- ============ 2 能控性能观性 ============ -->
+<section id="tab-ctrb">
+  <div class="panel">
+    <h2>能控性与能观性判别</h2>
+    <p class="hint">构造能控性矩阵 W<sub>c</sub>=[B AB ⋯ A<sup>n−1</sup>B] 与能观性矩阵 W<sub>o</sub>=[C; CA; ⋯]，用高斯消元求秩：秩等于 n 即完全能控/能观。</p>
+    <div class="mats">
+      <div class="ctrl"><label>系统矩阵 A</label><input type="text" id="ct-A" value="1, 1; 0, 2"></div>
+      <div class="ctrl"><label>输入矩阵 B</label><input type="text" id="ct-B" value="0; 1"></div>
+      <div class="ctrl"><label>输出矩阵 C</label><input type="text" id="ct-C" value="1, 0"></div>
+      <div class="ctrl" style="flex:0.4;min-width:110px"><label>&nbsp;</label>
+        <div class="btns" style="margin:0"><button id="ct-go">判 别</button></div></div>
+    </div>
+    <div class="btns">
+      <button id="ct-ex1">示例：可控但不完全可观</button>
+      <button id="ct-ex2">示例：不可控</button>
+    </div>
+    <div class="chips" id="ct-chips"></div>
+    <div class="plotwrap"><canvas id="cv-ct" height="300"></canvas></div>
+    <p class="note">物理直觉：能控 = 存在输入能把任意初态拉回原点；能观 = 由输出 y(t) 能反推全部状态。上图以当前系统画 x₁-x₂ 相平面轨迹（阶跃输入，起点 (1,1)）。</p>
+  </div>
+</section>
+
+<!-- ============ 3 极点配置 ============ -->
+<section id="tab-pole">
+  <div class="panel">
+    <h2>状态反馈极点配置（Ackermann 公式）</h2>
+    <p class="hint">对完全能控的被控对象设计状态反馈 u=−Kx，把闭环极点放到期望位置。拖动滑块设定期望阻尼比 ζ 与自然频率 ω<sub>n</sub>，右侧实时对比开环与闭环阶跃响应。</p>
+    <div class="mats">
+      <div class="ctrl"><label>系统矩阵 A（默认双积分器）</label><input type="text" id="po-A" value="0, 1; 0, 0"></div>
+      <div class="ctrl"><label>输入矩阵 B</label><input type="text" id="po-B" value="0; 1"></div>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label>期望阻尼比 ζ <b id="v-pzeta"></b></label>
+        <input type="range" id="po-zeta" min="0.2" max="1.5" step="0.01" value="0.7"></div>
+      <div class="ctrl"><label>期望自然频率 ω<sub>n</sub> (rad/s) <b id="v-pwn"></b></label>
+        <input type="range" id="po-wn" min="0.5" max="8" step="0.1" value="3"></div>
+    </div>
+    <div class="chips" id="po-chips"></div>
+    <div class="plotwrap"><canvas id="cv-po" height="340"></canvas></div>
+    <p class="note">校验锚点：对默认双积分器，理论结果 K=[ω<sub>n</sub>², 2ζω<sub>n</sub>]——拖滑块看 K 是否与手算一致。注意闭环响应与开环（发散）的天壤之别。</p>
+  </div>
+</section>
+
+<!-- ============ 4 状态观测器 ============ -->
+<section id="tab-obsv">
+  <div class="panel">
+    <h2>全维状态观测器：用输出重构状态</h2>
+    <p class="hint">真实状态不可全测时，构造观测器 ẋ̂=Ax̂+Bu+L(y−Cx̂)。拖动滑块设定观测器极点带宽 α（极点放在 −α±jα，应快于被控对象极点），看估计 x̂ 追上真值 x 的过程。</p>
+    <div class="mats">
+      <div class="ctrl"><label>系统矩阵 A</label><input type="text" id="ob-A" value="0, 1; -9, -1.2"></div>
+      <div class="ctrl"><label>输出矩阵 C</label><input type="text" id="ob-C" value="1, 0"></div>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label>观测器带宽 α (rad/s) <b id="v-oa"></b></label>
+        <input type="range" id="ob-a" min="1" max="12" step="0.1" value="4"></div>
+    </div>
+    <div class="chips" id="ob-chips"></div>
+    <div class="plotwrap"><canvas id="cv-ob" height="340"></canvas></div>
+    <p class="note">初始估计误差 x(0)−x̂(0)=(1,1)ᵀ。误差动态由 A−LC 决定——α 越大收敛越快，但对测量噪声越敏感（这是观测器设计的核心权衡）。</p>
+  </div>
+</section>
+
+<!-- ============ 5 卡尔曼滤波 ============ -->
+<section id="tab-kf">
+  <div class="panel">
+    <h2>卡尔曼滤波：从噪声测量中估计状态</h2>
+    <p class="hint">一维匀速运动跟踪：真值 p(t)=v·t（带过程噪声的加速度扰动），只能测到含噪位置。KF 用「预测+校正」在线估计 [位置, 速度]。拖动噪声滑块，看估计精度如何碾压单次测量。</p>
+    <div class="ctrls">
+      <div class="ctrl"><label>测量噪声 σ<sub>z</sub> (m) <b id="v-r"></b></label>
+        <input type="range" id="kf-r" min="0.2" max="5" step="0.1" value="1.5"></div>
+      <div class="ctrl"><label>过程噪声 σ<sub>a</sub> (m/s²) <b id="v-q"></b></label>
+        <input type="range" id="kf-q" min="0.01" max="2" step="0.01" value="0.3"></div>
+    </div>
+    <div class="chips" id="kf-chips"></div>
+    <div class="plotwrap"><canvas id="cv-kf" height="340"></canvas></div>
+    <p class="note">数据固定随机种子（可复现）。结论指标：估计 RMSE 应显著小于测量 RMSE；σ<sub>a</sub> 调大时滤波器更「信任」测量（Kalman 增益上升）。</p>
+  </div>
+</section>
+
+</main>
+<footer>现代控制理论交互实验台 · 单文件离线可用 · MIT License · 由 Leslieryin 维护 · 与经典控制版 <a href="https://github.com/Leslieryin/control-lab">control-lab</a> 配套</footer>
+
+<script>
+"use strict";
+/* ================= 矩阵库 ================= */
+function parseMat(t){
+  const rows=t.split(/[;\n]+/).map(r=>r.trim()).filter(r=>r!=="");
+  if(!rows.length)return null;
+  const m=rows.map(r=>r.split(/[,，\s]+/).filter(x=>x!=="").map(Number));
+  if(m.some(r=>r.some(v=>isNaN(v))))return null;
+  const c=m[0].length;
+  if(m.some(r=>r.length!==c))return null;
+  return m;
+}
+const matT=A=>A[0].map((_,j)=>A.map(r=>r[j]));
+function matMul(A,B){
+  const n=A.length,m=B[0].length,k=B.length;
+  const C=Array.from({length:n},()=>new Array(m).fill(0));
+  for(let i=0;i<n;i++)for(let j=0;j<m;j++){let s=0;
+    for(let t=0;t<k;t++)s+=A[i][t]*B[t][j];C[i][j]=s;}
+  return C;
+}
+const matAdd=(A,B)=>A.map((r,i)=>r.map((v,j)=>v+B[i][j]));
+const matScale=(A,k)=>A.map(r=>r.map(v=>v*k));
+const matVec=(A,x)=>matMul(A,x.map(v=>[v])).map(r=>r[0]);
+const eye=n=>Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+function matRank(A){
+  const m=A.map(r=>r.slice());
+  const n=m.length,c=m[0].length;
+  let tol=1e-10;
+  for(const r of m)for(const v of r)tol=Math.max(tol,Math.abs(v));
+  tol*=Math.max(n,c)*1e-12;
+  let rank=0,row=0;
+  for(let col=0;col<c&&row<n;col++){
+    let p=row;
+    for(let i=row;i<n;i++)if(Math.abs(m[i][col])>Math.abs(m[p][col]))p=i;
+    if(Math.abs(m[p][col])<=tol)continue;
+    [m[row],m[p]]=[m[p],m[row]];
+    for(let i=row+1;i<n;i++){const f=m[i][col]/m[row][col];
+      for(let j=col;j<c;j++)m[i][j]-=f*m[row][j];}
+    row++;rank++;
+  }
+  return rank;
+}
+function matInv(A){
+  const n=A.length;
+  const M=A.map((r,i)=>[...r,...eye(n)[i]]);
+  for(let col=0;col<n;col++){
+    let p=col;
+    for(let i=col;i<n;i++)if(Math.abs(M[i][col])>Math.abs(M[p][col]))p=i;
+    if(Math.abs(M[p][col])<1e-12)return null;
+    [M[col],M[p]]=[M[p],M[col]];
+    const d=M[col][col];
+    for(let j=0;j<2*n;j++)M[col][j]/=d;
+    for(let i=0;i<n;i++)if(i!==col&&Math.abs(M[i][col])>1e-15){
+      const f=M[i][col];
+      for(let j=0;j<2*n;j++)M[i][j]-=f*M[col][j];
+    }
+  }
+  return M.map(r=>r.slice(n));
+}
+function hstack(mats){ // 列拼接
+  return mats[0].map((row,i)=>mats.reduce((acc,M)=>[...acc,...M[i]],[]));
+}
+function vstack(mats){
+  return mats.reduce((acc,M)=>[...acc,...M],[]);
+}
+function ctrbMat(A,B){
+  const n=A.length;
+  const cols=[B];
+  let P=B;
+  for(let k=1;k<n;k++){P=matMul(A,P);cols.push(P);}
+  return hstack(cols);
+}
+function obsvMat(A,C){
+  const n=A.length;
+  const rows=[C];
+  let P=C;
+  for(let k=1;k<n;k++){P=matMul(P,A);rows.push(P);}
+  return vstack(rows);
+}
+/* 期望极点（实根或共轭对列表）→ 特征多项式升幂系数 */
+function polyFromPoles(poles){
+  let co=[1];
+  const used=new Array(poles.length).fill(false);
+  for(let i=0;i<poles.length;i++){
+    if(used[i])continue;
+    const p=poles[i];
+    if(Math.abs(p.im)>1e-9){
+      const j=poles.findIndex((q,k)=>!used[k]&&Math.abs(q.re-p.re)<1e-9&&Math.abs(q.im+p.im)<1e-9);
+      if(j>i){used[j]=true;
+        co=convReal(co,[p.re*p.re+p.im*p.im,-2*p.re,1]);continue;}
+    }
+    co=convReal(co,[-p.re,1]);
+  }
+  return co; // 升幂 c0 + c1 s + ...（首一）
+  function convReal(a,b){
+    const out=new Array(a.length+b.length-1).fill(0);
+    for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++)out[i+j]+=a[i]*b[j];
+    return out;
+  }
+}
+function matPoly(A,co){ // φ(A) = A^n + c_{n−1}A^{n−1} + … + c_0 I（co 升幂、首一）
+  const n=A.length;
+  let R=matScale(eye(n),co[0]??0);
+  let Ak=eye(n);
+  for(let k=1;k<=n;k++){Ak=matMul(Ak,A);R=matAdd(R,matScale(Ak,co[k]??0));}
+  return R;
+}
+function ackermann(A,B,poles){
+  const n=A.length;
+  const Wc=ctrbMat(A,B);
+  if(matRank(Wc)!==n)return null;
+  const Winv=matInv(Wc);
+  if(!Winv)return null;
+  const co=polyFromPoles(poles);
+  const phiA=matPoly(A,co);
+  const en=Array.from({length:n},(_,i)=>[i===n-1?1:0]); // e_n^T
+  const K=matMul(matMul(matT(en),Winv),phiA); // 1×n
+  return K[0];
+}
+/* RK4：ẋ = Ax + Bu（u 为标量函数） */
+function simSS(A,B,x0,u,T,dt){
+  const n=A.length,steps=Math.round(T/dt),out=[[0,...x0]];
+  let x=x0.slice();
+  const f=(xv,t)=>matVec(A,xv).map((v,i)=>v+B[i][0]*u(t));
+  for(let k=0;k<steps;k++){
+    const t=k*dt;
+    const k1=f(x,t),k2=f(x.map((v,i)=>v+dt/2*k1[i]),t),
+          k3=f(x.map((v,i)=>v+dt/2*k2[i]),t),k4=f(x.map((v,i)=>v+dt*k3[i]),t);
+    x=x.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+    out.push([t+dt,...x]);
+  }
+  return out;
+}
+/* 固定种子随机数（mulberry32），保证可复现 */
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;
+  return((t^t>>>14)>>>0)/4294967296;};}
+const gauss=r=>{ // Box-Muller
+  const u=Math.max(r(),1e-12),v=r();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+};
+
+/* ================= 画布工具（与 control-lab 同源） ================= */
+function setupCanvas(cv){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||300,h=cv.clientHeight||+cv.dataset.h||300;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+  }
+  const ctx=cv.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  return{ctx,w,h};
+}
+class Plot{
+  constructor(cv){this.cv=cv;}
+  frame(xr,yr,opt={}){
+    const{ctx,w,h}=setupCanvas(this.cv);
+    this.ctx=ctx;this.w=w;this.h=h;this.xr=xr;this.yr=yr;
+    this.padL=opt.padL??46;this.padR=opt.padR??12;this.padT=opt.padT??10;this.padB=opt.padB??26;
+    const X=x=>this.padL+(x-xr[0])/(xr[1]-xr[0])*(w-this.padL-this.padR);
+    const Y=y=>h-this.padB-(y-yr[0])/(yr[1]-yr[0])*(h-this.padT-this.padB);
+    this.X=X;this.Y=Y;
+    ctx.font="11px system-ui";ctx.fillStyle="#8a97a5";ctx.strokeStyle="#e4eaf1";ctx.lineWidth=1;
+    const nx=opt.nx??6,ny=opt.ny??5;
+    for(let i=0;i<=nx;i++){
+      const x=xr[0]+(xr[1]-xr[0])*i/nx;
+      ctx.beginPath();ctx.moveTo(X(x),this.padT);ctx.lineTo(X(x),h-this.padB);ctx.stroke();
+      ctx.textAlign=i===0?"left":i===nx?"right":"center";
+      ctx.fillText(fmt(x),X(x),h-this.padB+14);
+    }
+    for(let j=0;j<=ny;j++){
+      const y=yr[0]+(yr[1]-yr[0])*j/ny;
+      ctx.beginPath();ctx.moveTo(this.padL,Y(y));ctx.lineTo(w-this.padR,Y(y));ctx.stroke();
+      ctx.textAlign="right";ctx.fillText(fmt(y),this.padL-6,Y(y)+4);
+    }
+    ctx.strokeStyle="#b9c5d2";
+    if(yr[0]<0&&yr[1]>0){ctx.beginPath();ctx.moveTo(this.padL,Y(0));ctx.lineTo(w-this.padR,Y(0));ctx.stroke();}
+    return this;
+  }
+  line(pts,color,width=2,dash=null){
+    const{ctx}=this;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;
+    if(dash)ctx.setLineDash(dash);
+    ctx.beginPath();let st=false;
+    for(const p of pts){
+      const x=this.X(p[0]),y=this.Y(p[1]);
+      if(!isFinite(x)||!isFinite(y)){st=false;continue;}
+      if(!st){ctx.moveTo(x,y);st=true;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();ctx.restore();return this;
+  }
+  dot(x,y,color,r=3){const{ctx}=this;ctx.fillStyle=color;ctx.beginPath();
+    ctx.arc(this.X(x),this.Y(y),r,0,7);ctx.fill();return this;}
+  text(t,x,y,color="#374b5f",size=12,align="left"){const{ctx}=this;ctx.fillStyle=color;
+    ctx.font=size+"px system-ui";ctx.textAlign=align;ctx.fillText(t,this.X(x),this.Y(y));return this;}
+  hline(y,color,dash=[4,4]){return this.line([[this.xr[0],y],[this.xr[1],y]],color,1,dash);}
+}
+const fmt=v=>{
+  if(v===0)return"0";
+  const a=Math.abs(v);
+  if(a>=1000||a<0.01)return v.toExponential(1);
+  if(a>=100)return v.toFixed(0);
+  if(a>=10)return v.toFixed(1);
+  return v.toFixed(2);
+};
+const chip=(html)=>{const d=document.createElement("div");d.className="chip";d.innerHTML=html;return d;};
+function setChips(id,items){const box=document.getElementById(id);box.innerHTML="";items.forEach(t=>box.appendChild(chip(t)));}
+const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
+
+/* ================= 实验 1：状态空间响应 ================= */
+(function(){
+  const $=id=>document.getElementById(id);
+  function render(){
+    const A=parseMat($("ss-A").value),B=parseMat($("ss-B").value),C=parseMat($("ss-C").value);
+    if(!A||!B||!C||A.length!==2||A[0].length!==2||B.length!==2||B[0].length!==1||C.length!==1||C[0].length!==2){
+      setChips("ss-chips",["矩阵格式错误：A 应为 2×2、B 为 2×1、C 为 1×2"]);return;}
+    const T=8;
+    const traj=simSS(A,B,[0,0],t=>t>=0.5?1:0,T,0.004);
+    // 特征值（2×2 解析）
+    const tr=A[0][0]+A[1][1],det=A[0][0]*A[1][1]-A[0][1]*A[1][0];
+    const disc=tr*tr-4*det;
+    let eig;
+    if(disc>=0){const s=Math.sqrt(disc);
+      eig=[`λ₁=${fmt((tr+s)/2)}`,`λ₂=${fmt((tr-s)/2)}`];
+    }else{const s=Math.sqrt(-disc);
+      eig=[`λ=${fmt(tr/2)}±${fmt(s/2)}j`];}
+    const stable=tr<0&&det>0;
+    const yArr=traj.map(r=>[r[0],C[0][0]*r[1]+C[0][1]*r[2]]);
+    let peak=0;for(const[,y]of yArr)peak=Math.max(peak,y);
+    const fv=yArr[yArr.length-1][1];
+    const p=new Plot($("cv-ss"));
+    const ymax=Math.max(peak*1.3,1.2);
+    p.frame([0,T],[Math.min(-0.1,0),Math.max(ymax,fv*1.2)]);
+    p.line(traj.map(r=>[r[0],r[1]]),"#7c3aed",1.8,[6,4]);
+    p.line(traj.map(r=>[r[0],r[2]]),"#0ea5e9",1.8,[2,3]);
+    p.line(yArr,"#0f6cbd",2.6);
+    p.text("x₁",T*0.985,traj[Math.round(traj.length*0.45)][1],"#7c3aed",11,"right");
+    p.text("x₂",T*0.985,traj[Math.round(traj.length*0.45)][2],"#0ea5e9",11,"right");
+    p.text("y=Cx",T*0.985,fv*1.05,"#0f6cbd",11,"right");
+    setChips("ss-chips",[
+      ...eig,
+      stable?`<span class="stable">A 渐近稳定（tr&lt;0 且 det&gt;0）</span>`:`<span class="unstable">不稳定或临界（需 tr&lt;0 且 det&gt;0）</span>`,
+      `终值 y(∞) ≈ <b>${fmt(fv)}</b>`,
+      `峰值 y<sub>max</sub> = <b>${fmt(peak)}</b>`,
+    ]);
+  }
+  $("ss-go").addEventListener("click",render);
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ================= 实验 2：能控性能观性 ================= */
+(function(){
+  const $=id=>document.getElementById(id);
+  function render(){
+    const A=parseMat($("ct-A").value),B=parseMat($("ct-B").value),C=parseMat($("ct-C").value);
+    if(!A||!B||!C||A.length!==2||A[0].length!==2){setChips("ct-chips",["矩阵格式错误"]);return;}
+    const n=2;
+    const Wc=ctrbMat(A,B),Wo=obsvMat(A,C);
+    const rc=matRank(Wc),ro=matRank(Wo);
+    // 相平面轨迹（阶跃，起点(1,1)）
+    const traj=simSS(A,B,[1,1],t=>1,6,0.004);
+    const p=new Plot($("cv-ct"));
+    const xs=traj.map(r=>r[1]),ys=traj.map(r=>r[2]);
+    const xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+    const pad=(v)=>v===0?0.5:(Math.abs(v)*0.15);
+    p.frame([xmin-pad(xmin),xmax+pad(xmax)],[ymin-pad(ymin),ymax+pad(ymax)],{nx:5,ny:5});
+    p.line(traj.map(r=>[r[1],r[2]]),"#0f6cbd",2.2);
+    p.dot(1,1,"#d97706",5);
+    p.text("起点(1,1)",1,1,"#b45309",11,"center");
+    p.text("x₂",xmax*0.96,ymax*0.1,"#8a97a5",11,"right");
+    p.text("x₁ →",xmax*0.96,ymin*0.1,"#8a97a5",11,"right");
+    setChips("ct-chips",[
+      `W<sub>c</sub> = [B AB] = <b>${fmtMat(Wc)}</b>，秩 = <b>${rc}</b> → ${rc===n?`<span class="stable">完全能控</span>`:`<span class="unstable">不能控</span>`}`,
+      `W<sub>o</sub> = [C;CA] = <b>${fmtMat(Wo)}</b>，秩 = <b>${ro}</b> → ${ro===n?`<span class="stable">完全能观</span>`:`<span class="unstable">不能观</span>`}`,
+      `判据：秩(W<sub>c</sub>)=n ⟺ 能控；秩(W<sub>o</sub>)=n ⟺ 能观（n=${n}）`,
+    ]);
+  }
+  $("ct-go").addEventListener("click",render);
+  $("ct-ex1").addEventListener("click",()=>{
+    $("ct-A").value="0, 1; -9, -1.2";$("ct-B").value="0; 9";$("ct-C").value="0, 1";render();});
+  $("ct-ex2").addEventListener("click",()=>{
+    $("ct-A").value="1, 0; 0, 2";$("ct-B").value="1; 0";$("ct-C").value="1, 1";render();});
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ================= 实验 3：极点配置 ================= */
+(function(){
+  const $=id=>document.getElementById(id);
+  function render(){
+    const zeta=+$("po-zeta").value,wn=+$("po-wn").value;
+    $("v-pzeta").textContent=zeta.toFixed(2);
+    $("v-pwn").textContent=wn.toFixed(1);
+    const A=parseMat($("po-A").value),B=parseMat($("po-B").value);
+    if(!A||!B||A.length!==2||B.length!==2||B[0].length!==1){setChips("po-chips",["矩阵格式错误"]);return;}
+    const wd=wn*Math.sqrt(Math.max(0,1-zeta*zeta));
+    const poles=[{re:-zeta*wn,im:wd},{re:-zeta*wn,im:-wd}];
+    const K=ackermann(A,B,poles);
+    if(!K){setChips("po-chips",["系统不完全能控，无法任意配置极点（先用第 2 页判别）"]);return;}
+    const T=6;
+    const open=simSS(A,B,[0,0],t=>1,T,0.004);
+    // 闭环：ẋ = (A − BK) x + B r，r=1
+    const BK=[];for(let i=0;i<2;i++)BK.push(K.map(k=>-k*B[i][0]));
+    const Acl=matAdd(A,BK);
+    // 前置增益 N：补偿状态反馈的稳态误差，使闭环终值 = 1（u = −Kx + N·r）
+    const AclInv=matInv(Acl);
+    let N=1;
+    if(AclInv){
+      const dc=-(AclInv[0][0]*B[0][0]+AclInv[0][1]*B[1][0]); // −C·Acl⁻¹·B，C=[1,0]
+      if(Math.abs(dc)>1e-9)N=1/dc;
+    }
+    const closed=simSS(Acl,B,[0,0],t=>N,T,0.004);
+    let oMax=0;for(const r of open)oMax=Math.max(oMax,Math.abs(r[1]));
+    let cPeak=0;for(const r of closed)cPeak=Math.max(cPeak,r[1]);
+    const fv=closed[closed.length-1][1];
+    const p=new Plot($("cv-po"));
+    const ymax=Math.max(cPeak*1.3,oMax*0.999,1.5);
+    p.frame([0,T],[Math.min(0,-0.02*ymax),Math.min(ymax,8)]);
+    // 开环若发散，画到超出即裁剪（Plot.line 对越界点直接连线，视觉上限制在图内）
+    p.line(open.map(r=>[r[0],Math.max(Math.min(r[1],8),-1)]),"#b91c1c",1.6,[5,4]);
+    p.hline(1,"#c9d4e0");
+    p.line(closed.map(r=>[r[0],r[1]]),"#0f6cbd",2.6);
+    p.text("开环（红，双积分器发散）",T*0.985,7.4,"#b91c1c",11,"right");
+    p.text("闭环 u=−Kx",T*0.985,fv*1.1,"#0f6cbd",11,"right");
+    setChips("po-chips",[
+      `期望极点：<b>${fmt(poles[0].re)}±${fmt(wd)}j</b>`,
+      `反馈增益 K = <b>[${fmt(K[0])}, ${fmt(K[1])}]</b>`,
+      `理论校验（双积分器）：K₁=ω<sub>n</sub>²=<b>${fmt(wn*wn)}</b>，K₂=2ζω<sub>n</sub>=<b>${fmt(2*zeta*wn)}</b>`,
+      `前置增益 N = <b>${fmt(N)}</b>（补偿稳态误差，使 y(∞)=1）`,
+      `闭环超调 ≈ <b>${fv>1e-9?(Math.max(0,cPeak-fv)/fv*100).toFixed(1):"—"}%</b>，终值 = <b>${fmt(fv)}</b>`,
+    ]);
+  }
+  ["po-zeta","po-wn"].forEach(id=>$(id).addEventListener("input",render));
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ================= 实验 4：状态观测器 ================= */
+(function(){
+  const $=id=>document.getElementById(id);
+  function render(){
+    const alpha=+$("ob-a").value;
+    $("v-oa").textContent=alpha.toFixed(1);
+    const A=parseMat($("ob-A").value),C=parseMat($("ob-C").value);
+    if(!A||!C||A.length!==2||C.length!==1||C[0].length!==2){setChips("ob-chips",["矩阵格式错误"]);return;}
+    // L = ackermann(Aᵀ, Cᵀ, 观测器极点)ᵀ
+    const poles=[{re:-alpha,im:alpha},{re:-alpha,im:-alpha}];
+    const Lrow=ackermann(matT(A),[[C[0][0]],[C[0][1]]],poles);
+    if(!Lrow){setChips("ob-chips",["系统不完全能观，无法任意配置观测器极点"]);return;}
+    const L=Lrow.map(v=>[v]);
+    // 联合仿真：真状态 x 与观测器 x̂，u=sin(0.5t) 使画面有持续激励
+    const dt=0.004,T=6,n=Math.round(T/dt);
+    let x=[1,-0.5],xh=[0,0];
+    const trajX=[],trajH=[],trajE=[];
+    const u=t=>Math.sin(0.5*t);
+    const B=[[0],[9]];
+    for(let k=0;k<n;k++){
+      const t=k*dt;
+      trajX.push([t,x[0]]);trajH.push([t,xh[0]]);trajE.push([t,x[0]-xh[0]]);
+      const step=(xv)=>{ // RK4 for ẋ=Ax+Bu
+        const g=(v)=>matVec(A,v).map((r,i)=>r+B[i][0]*u(t));
+        const k1=g(xv),k2=g(xv.map((v,i)=>v+dt/2*k1[i])),
+              k3=g(xv.map((v,i)=>v+dt/2*k2[i])),k4=g(xv.map((v,i)=>v+dt*k3[i]));
+        return xv.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+      };
+      x=step(x);
+      const y=x[0]*C[0][0]+x[1]*C[0][1];
+      const yh=xh[0]*C[0][0]+xh[1]*C[0][1];
+      const gh=(v)=>{ // ẋ̂=Ax̂+Bu+L(y−Cx̂)
+        const base=matVec(A,v).map((r,i)=>r+B[i][0]*u(t));
+        return base.map((r,i)=>r+L[i][0]*(y-yh));
+      };
+      const k1=gh(xh),k2=gh(xh.map((v,i)=>v+dt/2*k1[i])),
+            k3=gh(xh.map((v,i)=>v+dt/2*k2[i])),k4=gh(xh.map((v,i)=>v+dt*k3[i]));
+      xh=xh.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+    }
+    let eMax=0;for(const[,e]of trajE)eMax=Math.max(eMax,Math.abs(e));
+    let xMax=0;for(const[,v]of trajX)xMax=Math.max(xMax,Math.abs(v));
+    const p=new Plot($("cv-ob"));
+    p.frame([0,T],[-xMax*1.15,xMax*1.15]);
+    p.line(trajX,"#0f6cbd",2.4);
+    p.line(trajH,"#d97706",2,[6,4]);
+    p.line(trajE,"#15803d",1.4,[2,3]);
+    p.text("真值 x₁",T*0.985,xMax*0.35,"#0f6cbd",11,"right");
+    p.text("估计 x̂₁",T*0.985,-xMax*0.5,"#b45309",11,"right");
+    p.text("误差 e₁",T*0.985,-xMax*0.9,"#15803d",11,"right");
+    setChips("ob-chips",[
+      `观测器增益 L = <b>[${fmt(L[0][0])}, ${fmt(L[1][0])}]ᵀ</b>`,
+      `观测器极点：<b>−${fmt(alpha)}±${fmt(alpha)}j</b>（带宽 α）`,
+      `t=6s 时估计误差 e₁ ≈ <b>${fmt(Math.abs(trajE[trajE.length-1][1]))}</b>（初值误差 1.0）`,
+      `α 越大收敛越快、对噪声越敏感——试试拖到 12`,
+    ]);
+  }
+  $("ob-a").addEventListener("input",render);
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ================= 实验 5：卡尔曼滤波 ================= */
+(function(){
+  const $=id=>document.getElementById(id);
+  const N=120,dt=0.1;
+  function render(){
+    const sz=+$("kf-r").value,sa=+$("kf-q").value;
+    $("v-r").textContent=sz.toFixed(1);
+    $("v-q").textContent=sa.toFixed(2);
+    const r=rng(20261025); // 固定种子，可复现
+    const F=[[1,dt],[0,1]],H=[[1,0]];
+    const Q=[[dt*dt*dt/3,dt*dt/2],[dt*dt/2,dt]].map(row=>row.map(v=>v*sa*sa));
+    const R=sz*sz;
+    // 仿真真值与测量
+    let p=0,v=1;
+    const truth=[],meas=[];
+    for(let k=0;k<N;k++){
+      const t=k*dt;
+      truth.push([t,p]);
+      meas.push([t,p+gauss(r)*sz]);
+      const a=gauss(r)*sa;
+      p+=v*dt+0.5*a*dt*dt;v+=a*dt;
+    }
+    // KF（xh 为扁平向量 [p, v]）
+    let xh=[0,0],P=[[4,0],[0,1]];
+    const est=[];
+    for(let k=0;k<N;k++){
+      // 预测
+      xh=matVec(F,xh);
+      P=matAdd(matMul(matMul(F,P),matT(F)),Q);
+      // 更新
+      const z=meas[k][1];
+      const y=z-H[0][0]*xh[0]-H[0][1]*xh[1];
+      const S=matMul(matMul(H,P),matT(H))[0][0]+R;
+      const Kg=matVec(matMul(P,matT(H)),[1]).map(v=>v/S);
+      xh=xh.map((v,i)=>v+Kg[i]*y);
+      const KH=matMul(matT([Kg]),H); // Kgᵀ(2×1)·H(1×2) = 2×2
+      P=matMul(matAdd(eye(2),matScale(KH,-1)),P);
+      est.push([k*dt,xh[0]]);
+    }
+    // RMSE（丢弃前 20 步过渡）
+    const rmse=arr=>Math.sqrt(arr.reduce((s,v)=>s+v*v,0)/arr.length);
+    const mErr=[],eErr=[];
+    for(let k=20;k<N;k++){
+      mErr.push(meas[k][1]-truth[k][1]);
+      eErr.push(est[k][1]-truth[k][1]);
+    }
+    const rm=rmse(mErr),re=rmse(eErr);
+    const p2=new Plot($("cv-kf"));
+    const all=meas.map(m=>m[1]);
+    const ymax=Math.max(...all,1)*1.15,ymin=Math.min(...all,-1)*1.15;
+    p2.frame([0,N*dt],[ymin,ymax]);
+    for(const m of meas)p2.dot(m[0],m[1],"#c3cedb",2);
+    p2.line(truth,"#0f6cbd",2.4);
+    p2.line(est,"#d97706",2.2);
+    p2.text("真值 p",N*dt*0.99,truth[N-1][1]+0.5,"#0f6cbd",11,"right");
+    p2.text("测量 z",N*dt*0.3,ymin*0.92,"#8a97a5",11);
+    p2.text("KF 估计 p̂",N*dt*0.99,est[N-1][1]-1.2,"#b45309",11,"right");
+    setChips("kf-chips",[
+      `测量 RMSE = <b>${rm.toFixed(3)} m</b>`,
+      `KF 估计 RMSE = <b>${re.toFixed(3)} m</b>`,
+      re<rm?`估计比原始测量精度提升 <b>${((1-re/rm)*100).toFixed(0)}%</b> <span class="stable">✓ 滤波有效</span>`
+          :`<span class="unstable">估计未优于测量（当前噪声参数极端）</span>`,
+      `终态速度估计 v̂ = <b>${xh[1].toFixed(2)} m/s</b>（真值 ≈ 1 m/s 附近游走）`,
+    ]);
+  }
+  ["kf-r","kf-q"].forEach(id=>$(id).addEventListener("input",render));
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ============ 画布尺寸初始化 + Tab 切换 ============ */
+document.querySelectorAll("canvas").forEach(cv=>{
+  const h=cv.getAttribute("height")||300;
+  cv.dataset.h=h;
+  cv.style.height=h+"px";
+  cv.removeAttribute("height");
+});
+document.getElementById("tabs").addEventListener("click",ev=>{
+  const btn=ev.target.closest("button");if(!btn)return;
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b===btn));
+  document.querySelectorAll("main section").forEach(s=>s.classList.toggle("on",s.id==="tab-"+btn.dataset.t));
+  window.dispatchEvent(new Event("resize"));
+});
+</script>
+</body>
+</html>
