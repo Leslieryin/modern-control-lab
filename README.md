@@ -1,6 +1,8 @@
 # modern-control-lab · 现代控制理论交互实验台
 
-**打开即用的单文件 HTML**——《现代控制理论 / 线性系统理论》课程核心实验的交互实现。零依赖、离线可用、所有矩阵运算在浏览器本地完成。
+[![在线演示](https://img.shields.io/badge/demo-%E5%9C%A8%E7%BA%BF%E6%89%93%E5%BC%80-0f6cbd?style=flat-square)](https://leslieryin.github.io/modern-control-lab/)
+
+**打开即用的单文件 HTML**——[在线直接用](https://leslieryin.github.io/modern-control-lab/)，或下载 `index.html` 双击离线运行。《现代控制理论 / 线性系统理论》课程核心实验的交互实现，所有矩阵运算在浏览器本地完成。
 
 与经典控制版 [control-lab](https://github.com/Leslieryin/control-lab) 配套：那边用传递函数讲经典控制理论，这边用状态空间讲现代控制理论。
 
