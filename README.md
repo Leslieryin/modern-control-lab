@@ -1,6 +1,7 @@
 # modern-control-lab · 现代控制理论交互实验台
 
 [![在线演示](https://img.shields.io/badge/demo-%E5%9C%A8%E7%BA%BF%E6%89%93%E5%BC%80-0f6cbd?style=flat-square)](https://leslieryin.github.io/modern-control-lab/)
+![CI](https://github.com/Leslieryin/modern-control-lab/actions/workflows/ci.yml/badge.svg)
 
 **打开即用的单文件 HTML**——[在线直接用](https://leslieryin.github.io/modern-control-lab/)，或下载 `index.html` 双击离线运行。《现代控制理论 / 线性系统理论》课程核心实验的交互实现，所有矩阵运算在浏览器本地完成。
 
