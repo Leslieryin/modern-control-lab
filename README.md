@@ -7,7 +7,9 @@
 
 与经典控制版 [control-lab](https://github.com/Leslieryin/control-lab) 配套：那边用传递函数讲经典控制理论，这边用状态空间讲现代控制理论。
 
-![状态空间阶跃响应：编辑 A/B/C 矩阵，状态分量与输出曲线实时重算](docs/shot-state.png)
+> **EN** — Interactive lab for modern control theory: state-space response, controllability and observability, Ackermann pole placement, state observer and Kalman filter. All matrix math is hand-written and runs in your browser. [Try it →](https://leslieryin.github.io/modern-control-lab/)
+
+![拖动期望阻尼比，闭环响应与反馈增益 K 实时重算](docs/demo.gif)
 
 ## 五个实验
 
