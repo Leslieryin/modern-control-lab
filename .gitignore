@@ -1,0 +1,14 @@
+# OS 产物
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器临时文件
+*.swp
+*~
+
+# Node（测试用系统 node 直跑、零依赖；防止将来误装依赖入库）
+node_modules/
+
+# 日志
+*.log
