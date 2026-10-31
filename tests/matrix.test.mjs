@@ -7,9 +7,10 @@
  * 特征值/行列式由测试自己算（2×2 用解析式、3×3 用余子式展开），
  * 不复用被测代码，避免"自己验自己"。
  */
+import fs from "node:fs";
 import { loadInline } from "./extract.mjs";
 
-const { matMul, matRank, matInv, ackermann, polyFromPoles, ctrbMat, obsvMat, matT, eye } =
+const { parseMat, matMul, matRank, matInv, ackermann, polyFromPoles, ctrbMat, obsvMat, matT, eye } =
   await loadInline("function parseMat(t)", "function setupCanvas",
     "parseMat, matMul, matRank, matInv, hstack, vstack, ctrbMat, obsvMat, polyFromPoles, matPoly, ackermann, simSS, matT, matAdd, matScale, eye");
 
@@ -115,6 +116,20 @@ console.log("\n[Ackermann 极点配置 —— 核心检验]");
   const K = ackermann([[0, 1], [0, 0]], [[0], [0]],
     [{ re: -1, im: 0 }, { re: -2, im: 0 }]);
   ok("不可控系统返回 null（不硬算假 K）", K === null);
+}
+
+console.log("\n[实验2 示例按钮回归：旧例子 A=[[0,1],[-9,-1.2]] 实际完全能观，与按钮文字自相矛盾]");
+{
+  // 修复后的「双积分器只测速度」例子：能控、但不完全能观（x₁ 不可重构）
+  const A = parseMat("0, 1; 0, 0"), B = parseMat("0; 1"), C = parseMat("0, 1");
+  ok("Wc 秩 2（能控）", matRank(ctrbMat(A, B)) === 2);
+  ok("Wo 秩 1（不完全能观）", matRank(obsvMat(A, C)) === 1);
+  const src = fs.readFileSync(new URL("../index.html", import.meta.url), "utf-8");
+  const js = src.split(/\r?\n/);
+  const i = js.findIndex((l) => l.includes('ct-ex1").addEventListener'));
+  const block = i >= 0 ? js.slice(i, i + 2).join("\n") : "";
+  ok("ct-ex1 按钮绑定的是该例子（旧矩阵已移除）",
+     block.includes('ct-A").value="0, 1; 0, 0"') && !block.includes("-9, -1.2"));
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);

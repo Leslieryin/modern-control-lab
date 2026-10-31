@@ -144,7 +144,7 @@ footer{max-width:1060px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
     </div>
     <div class="chips" id="ob-chips"></div>
     <div class="plotwrap"><canvas id="cv-ob" height="340"></canvas></div>
-    <p class="note">初始估计误差 x(0)−x̂(0)=(1,1)ᵀ。误差动态由 A−LC 决定——α 越大收敛越快，但对测量噪声越敏感（这是观测器设计的核心权衡）。</p>
+    <p class="note">初始估计误差 x(0)−x̂(0)=(1, −0.5)ᵀ。误差动态由 A−LC 决定——α 越大收敛越快，但对测量噪声越敏感（这是观测器设计的核心权衡）。</p>
   </div>
 </section>
 
@@ -448,7 +448,7 @@ const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
   }
   $("ct-go").addEventListener("click",render);
   $("ct-ex1").addEventListener("click",()=>{
-    $("ct-A").value="0, 1; -9, -1.2";$("ct-B").value="0; 9";$("ct-C").value="0, 1";render();});
+    $("ct-A").value="0, 1; 0, 0";$("ct-B").value="0; 1";$("ct-C").value="0, 1";render();});
   $("ct-ex2").addEventListener("click",()=>{
     $("ct-A").value="1, 0; 0, 2";$("ct-B").value="1; 0";$("ct-C").value="1, 1";render();});
   window.addEventListener("resize",render);
