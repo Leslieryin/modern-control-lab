@@ -24,7 +24,9 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: 运行测试
-        run: node tests/matrix.test.mjs
+        run: |
+          node tests/matrix.test.mjs
+          node tests/syntax.test.mjs
 
   offline:
     name: 单文件零依赖承诺
