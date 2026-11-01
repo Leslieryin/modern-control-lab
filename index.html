@@ -604,8 +604,9 @@ const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
       const S=matMul(matMul(H,P),matT(H))[0][0]+R;
       const Kg=matVec(matMul(P,matT(H)),[1]).map(v=>v/S);
       xh=xh.map((v,i)=>v+Kg[i]*y);
-      const KH=matMul(matT([Kg]),H); // Kgᵀ(2×1)·H(1×2) = 2×2
-      P=matMul(matAdd(eye(2),matScale(KH,-1)),P);
+      // Joseph 形式：P=(I−KH)P(I−KH)ᵀ+KRKᵀ，任意增益下都保持 P 对称正定
+      const IKH=matAdd(eye(2),matScale(matMul(matT([Kg]),H),-1)); // I−KH
+      P=matAdd(matMul(matMul(IKH,P),matT(IKH)),matScale(matMul(matT([Kg]),[Kg]),R)); // +KRKᵀ
       est.push([k*dt,xh[0]]);
     }
     // RMSE（丢弃前 20 步过渡）

@@ -132,5 +132,59 @@ console.log("\n[实验2 示例按钮回归：旧例子 A=[[0,1],[-9,-1.2]] 实�
      block.includes('ct-A").value="0, 1; 0, 0"') && !block.includes("-9, -1.2"));
 }
 
+console.log("\n[实验5 卡尔曼：协方差更新用 Joseph 形式（数值稳健性备忘项收尾）]");
+{
+  const src = fs.readFileSync(new URL("../index.html", import.meta.url), "utf-8");
+  const js = src.split(/\r?\n/);
+  const a = js.findIndex((l) => l.includes("实验 5：卡尔曼滤波"));
+  const b = js.findIndex((l) => l.includes("RMSE（丢弃前 20 步过渡）"));
+  const block = a >= 0 && b > a ? js.slice(a, b).join("\n") : "";
+  ok("KF 块内含 Joseph 两项：IKH·P·IKHᵀ 与 KRKᵀ",
+     block.includes("matMul(matMul(IKH,P),matT(IKH))") &&
+     block.includes("matScale(matMul(matT([Kg]),[Kg]),R)"));
+  ok("旧形式 (I−KH)P 已移除", !block.includes("matScale(KH,-1)"));
+
+  // 数值锚点：检验逻辑独立实现（不复用页面代码），验证 Joseph 更新在这组参数下的核心性质
+  const rng2 = (seed) => { let s = seed >>> 0; return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+  const gauss2 = (r) => { const u = Math.max(r(), 1e-12), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const N = 120, dt = 0.1, sz = 1.5, sa = 0.3; // 与页面默认滑块值一致
+  const r = rng2(20261025);
+  const truth = [], meas = [];
+  let p = 0, v = 1;
+  for (let k = 0; k < N; k++) {
+    truth.push(p); meas.push(p + gauss2(r) * sz);
+    const a3 = gauss2(r) * sa; p += v * dt + 0.5 * a3 * dt * dt; v += a3 * dt;
+  }
+  const F = [[1, dt], [0, 1]];
+  const Q = [[dt * dt * dt / 3, dt * dt / 2], [dt * dt / 2, dt]].map((row) => row.map((x) => x * sa * sa));
+  const R = sz * sz;
+  const mul = (A, B) => A.map((row) => B[0].map((_, j) => row.reduce((s, x, i) => s + x * B[i][j], 0)));
+  const add = (A, B) => A.map((row, i) => row.map((x, j) => x + B[i][j]));
+  const trn = (A) => A[0].map((_, j) => A.map((row) => row[j]));
+  let xh = [0, 0], P = [[4, 0], [0, 1]];
+  const est = [];
+  let worstAsym = 0;
+  for (let k = 0; k < N; k++) {
+    xh = [F[0][0] * xh[0] + F[0][1] * xh[1], F[1][0] * xh[0] + F[1][1] * xh[1]];
+    P = add(mul(mul(F, P), trn(F)), Q);
+    const y = meas[k] - xh[0];
+    const S = P[0][0] + R;
+    const Kg = [P[0][0] / S, P[1][0] / S];
+    xh = [xh[0] + Kg[0] * y, xh[1] + Kg[1] * y];
+    // Joseph：P=(I−KH)P(I−KH)ᵀ+KRKᵀ
+    const IKH = [[1 - Kg[0], 0], [-Kg[1], 1]]; // I−K·H，H=[1,0]
+    const KRKt = [[R * Kg[0] * Kg[0], R * Kg[0] * Kg[1]], [R * Kg[1] * Kg[0], R * Kg[1] * Kg[1]]];
+    P = add(mul(mul(IKH, P), trn(IKH)), KRKt);
+    worstAsym = Math.max(worstAsym, Math.abs(P[0][1] - P[1][0]));
+    est.push(xh[0]);
+  }
+  const rmse = (arr) => Math.sqrt(arr.reduce((s, x) => s + x * x, 0) / arr.length);
+  const mErr = [], eErr = [];
+  for (let k = 20; k < N; k++) { mErr.push(meas[k] - truth[k]); eErr.push(est[k] - truth[k]); }
+  ok("Joseph 更新下 P 全程对称（|P01−P10| < 1e-12）", worstAsym < 1e-12, `最坏不对称 ${worstAsym.toExponential(2)}`);
+  ok("P 正定（终态 P00>0 且 det>0）", P[0][0] > 0 && P[0][0] * P[1][1] - P[0][1] * P[1][0] > 0);
+  ok("滤波有效：估计 RMSE < 测量 RMSE", rmse(eErr) < rmse(mErr), `估计 ${rmse(eErr).toFixed(3)} vs 测量 ${rmse(mErr).toFixed(3)}`);
+}
+
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);
