@@ -424,7 +424,7 @@ const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
   const $=id=>document.getElementById(id);
   function render(){
     const A=parseMat($("ct-A").value),B=parseMat($("ct-B").value),C=parseMat($("ct-C").value);
-    if(!A||!B||!C||A.length!==2||A[0].length!==2){setChips("ct-chips",["矩阵格式错误"]);return;}
+    if(!A||!B||!C||A.length!==2||A[0].length!==2||B.length!==2||B[0].length!==1||C.length!==1||C[0].length!==2){setChips("ct-chips",["矩阵格式错误"]);return;}
     const n=2;
     const Wc=ctrbMat(A,B),Wo=obsvMat(A,C);
     const rc=matRank(Wc),ro=matRank(Wo);
@@ -491,7 +491,9 @@ const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
     p.line(open.map(r=>[r[0],Math.max(Math.min(r[1],8),-1)]),"#b91c1c",1.6,[5,4]);
     p.hline(1,"#c9d4e0");
     p.line(closed.map(r=>[r[0],r[1]]),"#0f6cbd",2.6);
-    p.text("开环（红，双积分器发散）",T*0.985,7.4,"#b91c1c",11,"right");
+    const openEnd=open[open.length-1][1];
+    const openDiv=!isFinite(openEnd)||openEnd>1e3;
+    p.text(openDiv?"开环（红，发散）":"开环（红）",T*0.985,Math.min(ymax,8)*0.95,"#b91c1c",11,"right");
     p.text("闭环 u=−Kx",T*0.985,fv*1.1,"#0f6cbd",11,"right");
     setChips("po-chips",[
       `期望极点：<b>${fmt(poles[0].re)}±${fmt(wd)}j</b>`,

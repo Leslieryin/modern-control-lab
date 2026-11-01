@@ -53,10 +53,11 @@ python -m http.server 8123   # 浏览器打开 http://127.0.0.1:8123/
 ## 测试
 
 ```bash
-node tests/matrix.test.mjs
+node tests/matrix.test.mjs   # 数学断言
+node tests/syntax.test.mjs   # 整体内联 script 的语法兜底
 ```
 
-19 条断言覆盖矩阵运算、秩判别与 Ackermann 极点配置（上文对拍记录的自动化部分），需要 Node ≥ 18。测试不复制源码：`tests/extract.mjs` 每次运行时从 `index.html` 里现切，测的一定是用户实际加载的那份。
+27 条断言覆盖矩阵运算、秩判别、Ackermann 极点配置与卡尔曼 Joseph 形式（上文对拍记录的自动化部分），需要 Node ≥ 18。测试不复制源码：`tests/extract.mjs` 每次运行时从 `index.html` 里现切，测的一定是用户实际加载的那份。
 
 ## 适合谁
 

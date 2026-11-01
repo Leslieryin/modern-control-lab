@@ -186,5 +186,15 @@ console.log("\n[实验5 卡尔曼：协方差更新用 Joseph 形式（数值稳
   ok("滤波有效：估计 RMSE < 测量 RMSE", rmse(eErr) < rmse(mErr), `估计 ${rmse(eErr).toFixed(3)} vs 测量 ${rmse(mErr).toFixed(3)}`);
 }
 
+console.log("\n[源码守卫：实验2 的 B/C 维度校验不可回退]");
+{
+  const src = fs.readFileSync(new URL("../index.html", import.meta.url), "utf-8");
+  const line = src.split(/\r?\n/).find((l) => l.includes("ct-chips") && l.includes("矩阵格式错误"));
+  ok("实验2 校验 A(2×2) 之外还查 B(2×1) 与 C(1×2)",
+     line.includes("B.length!==2") && line.includes("C[0].length!==2"));
+  ok("实验3 开环标签纵坐标随轴顶（不再固定 7.4）",
+     src.includes("Math.min(ymax,8)*0.95") && !src.includes(",7.4,"));
+}
+
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);
