@@ -376,6 +376,20 @@ const fmt=v=>{
 const chip=(html)=>{const d=document.createElement("div");d.className="chip";d.innerHTML=html;return d;};
 function setChips(id,items){const box=document.getElementById(id);box.innerHTML="";items.forEach(t=>box.appendChild(chip(t)));}
 const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
+// 2×2 系统的 G(s)=C(sI−A)^{-1}B 符号显示:分子按 s 升幂展开,分母 s²−tr(A)·s+det(A)
+function gChip(A,B,C){
+  const gf=v=>{const r=Math.round(v*1000)/1000;return String(r);};
+  const b1=B[0][0],b2=B[1][0],c1=C[0][0],c2=C[0][1];
+  const tr=A[0][0]+A[1][1],detA=A[0][0]*A[1][1]-A[0][1]*A[1][0];
+  const n1=c1*b1+c2*b2;
+  const n0=c1*(A[0][1]*b2-A[1][1]*b1)+c2*(A[1][0]*b1-A[0][0]*b2);
+  const num=n1===0?gf(n0)
+    :`${n1===1?"":n1===-1?"−":gf(n1)+"·"}s${n0===0?"":n0>0?` + ${gf(n0)}`:` − ${gf(-n0)}`}`;
+  const den=`s<sup>2</sup>${tr===0?"":tr>0?` − ${gf(tr)}s`:` + ${gf(-tr)}s`}${detA===0?"":detA>0?` + ${gf(detA)}`:` − ${gf(-detA)}`}`;
+  let note="";
+  if(n0===0&&detA===0&&n1!==0)note=` → 化简 <b>${gf(n1)}/s</b>:二阶系统只露一阶——不能观模态在 I/O 视角掉阶`;
+  return `传函 G(s) = C(sI−A)<sup>−1</sup>B = <b>(${num}) / (${den})</b>${note}`;
+}
 
 /* ================= 实验 1：状态空间响应 ================= */
 (function(){
@@ -443,12 +457,13 @@ const fmtMat=M=>M.map(r=>r.map(fmt).join(", ")).join(" ; ");
     setChips("ct-chips",[
       `W<sub>c</sub> = [B AB] = <b>${fmtMat(Wc)}</b>，秩 = <b>${rc}</b> → ${rc===n?`<span class="stable">完全能控</span>`:`<span class="unstable">不能控</span>`}`,
       `W<sub>o</sub> = [C;CA] = <b>${fmtMat(Wo)}</b>，秩 = <b>${ro}</b> → ${ro===n?`<span class="stable">完全能观</span>`:`<span class="unstable">不能观</span>`}`,
+      gChip(A,B,C),
       `判据：秩(W<sub>c</sub>)=n ⟺ 能控；秩(W<sub>o</sub>)=n ⟺ 能观（n=${n}）`,
     ]);
   }
   $("ct-go").addEventListener("click",render);
   $("ct-ex1").addEventListener("click",()=>{
-    $("ct-A").value="0, 1; 0, 0";$("ct-B").value="0; 1";$("ct-C").value="0, 1";render();});
+    $("ct-A").value="0, 1; 0, 0";$("ct-B").value="0; 9";$("ct-C").value="0, 1";render();});
   $("ct-ex2").addEventListener("click",()=>{
     $("ct-A").value="1, 0; 0, 2";$("ct-B").value="1; 0";$("ct-C").value="1, 1";render();});
   window.addEventListener("resize",render);
